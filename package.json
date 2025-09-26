@@ -16,5 +16,9 @@
   "bugs": {
     "url": "https://github.com/devanknambiar/safeX/issues"
   },
-  "homepage": "https://github.com/devanknambiar/safeX#readme"
+  "homepage": "https://github.com/devanknambiar/safeX#readme",
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "mqtt": "^5.14.1"
+  }
 }
