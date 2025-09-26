@@ -1,0 +1,20 @@
+{
+  "name": "safex",
+  "version": "1.0.0",
+  "description": "To protect the workers in such a highly volatile and high risk workplace we introduce SafeX, a compact and wearable safety device that serves as a health and protection from the hazardous conditions of the workplace.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devanknambiar/safeX.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/devanknambiar/safeX/issues"
+  },
+  "homepage": "https://github.com/devanknambiar/safeX#readme"
+}
