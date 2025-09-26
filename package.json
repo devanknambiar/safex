@@ -19,6 +19,8 @@
   "homepage": "https://github.com/devanknambiar/safeX#readme",
   "dependencies": {
     "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "mongodb": "^6.20.0",
     "mqtt": "^5.14.1"
   }
 }
