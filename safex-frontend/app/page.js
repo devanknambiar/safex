@@ -23,9 +23,85 @@ const Navbar = ({ onLogout }) => (
     </div>
   </nav>
 );
-const StatCard = ({ title, value, unit, icon, color, trend }) => ( <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5 transition-all hover:bg-slate-800/40 hover:border-cyan-400/50"><div className="flex items-center justify-between"><div className="flex items-center space-x-3"><div className={`text-3xl ${color}`}>{icon}</div><h3 className="font-medium text-slate-300">{title}</h3></div><div className={`text-sm font-semibold ${trend === 'up' ? 'text-green-400' : 'text-slate-400'}`}>{trend === 'up' ? '▲' : '▬'}</div></div><div className="text-right mt-4"><p className="text-5xl font-bold text-white">{value ?? '...'}</p><p className="text-lg font-normal text-slate-400 -mt-1">{unit}</p></div></div>);
-const DeviceStatus = ({ deviceId, lastUpdate, isOnline }) => ( <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5"><h3 className="font-semibold text-white mb-3">Device Status</h3><div className="flex items-center justify-between mb-2"><span className="text-slate-400 text-sm">Status</span><span className={`flex items-center space-x-2 font-semibold text-sm ${isOnline ? 'text-green-400' : 'text-amber-400'}`}><span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-400 animate-pulse' : 'bg-amber-400'}`}></span><span>{isOnline ? 'Online' : 'Connecting...'}</span></span></div><div className="flex items-center justify-between mb-2"><span className="text-slate-400 text-sm">Device ID</span><span className="font-mono text-slate-300 text-sm">{deviceId || 'N/A'}</span></div><div className="flex items-center justify-between"><span className="text-slate-400 text-sm">Last Update</span><span className="text-slate-300 text-sm">{lastUpdate}</span></div></div>);
-const AlertPanel = () => ( <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5"><h3 className="font-semibold text-white mb-3">System Alerts</h3><div className="space-y-3"><div className="flex items-start space-x-3 text-sm"><span className="text-red-400 mt-1">●</span><p className="text-slate-300"><span className="font-semibold text-white">High CO Detected:</span> 15 ppm at 09:42 AM</p></div><div className="flex items-start space-x-3 text-sm"><span className="text-amber-400 mt-1">●</span><p className="text-slate-300"><span className="font-semibold text-white">Low SpO₂ Warning:</span> 94% at 09:40 AM</p></div><div className="flex items-start space-x-3 text-sm"><span className="text-green-400 mt-1">●</span><p className="text-slate-300"><span className="font-semibold text-white">System Nominal:</span> All vitals stable.</p></div></div></div>);
+
+const StatCard = ({ title, value, unit, icon, color, trend }) => (
+  <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5 transition-all hover:bg-slate-800/40 hover:border-cyan-400/50">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-3">
+        <div className={`text-3xl ${color}`}>{icon}</div>
+        <h3 className="font-medium text-slate-300">{title}</h3>
+      </div>
+      <div
+        className={`text-sm font-semibold ${
+          trend === 'up' ? 'text-green-400' : 'text-slate-400'
+        }`}
+      >
+        {trend === 'up' ? '▲' : '▬'}
+      </div>
+    </div>
+    <div className="text-right mt-4">
+      <p className="text-5xl font-bold text-white">{value ?? '...'}</p>
+      <p className="text-lg font-normal text-slate-400 -mt-1">{unit}</p>
+    </div>
+  </div>
+);
+
+const DeviceStatus = ({ deviceId, lastUpdate, isOnline }) => (
+  <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5">
+    <h3 className="font-semibold text-white mb-3">Device Status</h3>
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-slate-400 text-sm">Status</span>
+      <span
+        className={`flex items-center space-x-2 font-semibold text-sm ${
+          isOnline ? 'text-green-400' : 'text-amber-400'
+        }`}
+      >
+        <span
+          className={`w-2.5 h-2.5 rounded-full ${
+            isOnline ? 'bg-green-400 animate-pulse' : 'bg-amber-400'
+          }`}
+        ></span>
+        <span>{isOnline ? 'Online' : 'Connecting...'}</span>
+      </span>
+    </div>
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-slate-400 text-sm">Device ID</span>
+      <span className="font-mono text-slate-300 text-sm">
+        {deviceId || 'N/A'}
+      </span>
+    </div>
+    <div className="flex items-center justify-between">
+      <span className="text-slate-400 text-sm">Last Update</span>
+      <span className="text-slate-300 text-sm">{lastUpdate}</span>
+    </div>
+  </div>
+);
+
+const AlertPanel = () => (
+  <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5">
+    <h3 className="font-semibold text-white mb-3">System Alerts</h3>
+    <div className="space-y-3">
+      <div className="flex items-start space-x-3 text-sm">
+        <span className="text-red-400 mt-1">●</span>
+        <p className="text-slate-300">
+          <span className="font-semibold text-white">High CO Detected:</span> 15 ppm at 09:42 AM
+        </p>
+      </div>
+      <div className="flex items-start space-x-3 text-sm">
+        <span className="text-amber-400 mt-1">●</span>
+        <p className="text-slate-300">
+          <span className="font-semibold text-white">Low SpO₂ Warning:</span> 94% at 09:40 AM
+        </p>
+      </div>
+      <div className="flex items-start space-x-3 text-sm">
+        <span className="text-green-400 mt-1">●</span>
+        <p className="text-slate-300">
+          <span className="font-semibold text-white">System Nominal:</span> All vitals stable.
+        </p>
+      </div>
+    </div>
+  </div>
+);
 
 // --- MAIN PAGE ---
 export default function DashboardPage() {
@@ -82,16 +158,16 @@ export default function DashboardPage() {
             </header>
 
             {error && <p className="text-center text-red-400 bg-red-900/50 p-3 rounded-lg mb-6">{error}</p>}
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <StatCard title="Heart Rate" value={data?.vitals?.heartRate} unit="bpm" icon="❤️" color="text-red-400" trend="stable" />
                 <StatCard title="SpO₂" value={data?.vitals?.spo2} unit="%" icon="💨" color="text-sky-400" trend="stable" />
-                <StatCard title="CO Level" value={data?.gas?.co} unit="ppm" icon="🔥" color="text-amber-400" trend="stable"/>
+                <StatCard title="CO Level" value={data?.gas?.co} unit="ppm" icon="🔥" color="text-amber-400" trend="stable" />
                 <StatCard title="LPG Level" value={data?.gas?.lpg} unit="ppm" icon="🏭" color="text-slate-400" trend="stable" />
               </div>
               <div className="space-y-6">
-                <DeviceStatus deviceId={data?.deviceId} lastUpdate={lastUpdate} isOnline={true}/>
+                <DeviceStatus deviceId={data?.deviceId} lastUpdate={lastUpdate} isOnline={true} />
                 <AlertPanel />
               </div>
             </div>
