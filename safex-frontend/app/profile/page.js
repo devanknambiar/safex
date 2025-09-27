@@ -82,7 +82,9 @@ export default function ProfilePage() {
           {/* Sidebar */}
           <aside className="w-full md:w-64 flex-shrink-0 mb-8 md:mb-0">
             <nav className="space-y-2">
+             <Link href="/" >
               <NavItem icon={<HomeIcon />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+              </Link>
               <NavItem icon={<UserIcon />} label="Personal Info" active={activeTab === 'personal'} onClick={() => setActiveTab('personal')} />
               <NavItem icon={<ShieldIcon />} label="Security" active={activeTab === 'security'} onClick={() => setActiveTab('security')} />
             </nav>
