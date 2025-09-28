@@ -6,7 +6,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 
 const MQTT_BROKER_URL = process.env.URL;
-// --- THIS CONSTANT HAS BEEN RESTORED ---
+
 const MQTT_OPTIONS = {
   port: process.env.PORT,
   username: process.env.USERNAME,
