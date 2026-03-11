@@ -1,6 +1,3 @@
-// File: app/login/page.js
-// IMPROVED: Added the "SafeX" brand title to the login card.
-
 'use client';
 
 import { useState } from 'react';
