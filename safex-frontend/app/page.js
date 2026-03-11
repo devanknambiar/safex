@@ -174,7 +174,8 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const response = await fetch("/api/latest-data");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/latest-data`);
       if (!response.ok) {
         throw new Error(`Network response error: ${response.statusText}`);
       }

@@ -54,7 +54,8 @@ const PersonalInfoContent = ({ user }) => {
 
   const handleSave = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/user/update', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/user/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, fullName: name }),
