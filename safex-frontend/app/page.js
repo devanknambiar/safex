@@ -166,8 +166,9 @@ export default function DashboardPage() {
   const { isAuthenticated, logout, user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
+    if (loading) return;
+    if (!isAuthenticated) {
+      router.replace('/login');
     }
   }, [isAuthenticated, loading, router]);
 
@@ -217,7 +218,9 @@ export default function DashboardPage() {
       </div>
     );
   }
-
+  if (!loading && !isAuthenticated) {
+    return null;
+  }
   if (isAuthenticated) {
     const lastUpdate = data ? new Date(data.receivedAt).toLocaleString() : 'Waiting for data...';
     
