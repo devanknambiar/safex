@@ -173,7 +173,7 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/latest-data');
+      const response = await fetch("/api/latest-data");
       if (!response.ok) {
         throw new Error(`Network response error: ${response.statusText}`);
       }
