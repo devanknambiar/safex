@@ -34,7 +34,7 @@ A full working demonstration can be viewed here:
 
 ### Project Demonstration Video
 
-[Watch Demo](./demo/safeXDashboard.mp4)
+[Watch Demo](https://drive.google.com/file/d/159ht7Sj6hOEybl_-9NUEHf91kpiNk-m4/view?usp=sharing)
 
 ### Hardware Prototype
 
