@@ -28,6 +28,10 @@ Industries such as mining, chemical plants, and disaster zones expose workers to
 
 ## Demo
 
+Due to hardware integration requirements, the live deployment may not always be available.
+
+A full working demonstration can be viewed here:
+
 ### Project Demonstration Video
 
 [Watch Demo](./demo/safeXDashboard.mp4)
