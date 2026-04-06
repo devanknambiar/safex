@@ -6,9 +6,8 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 
 const MQTT_BROKER_URL = process.env.URL;
-
 const MQTT_OPTIONS = {
-  port: process.env.PORT,
+  port: parseInt(process.env.PORT),
   username: process.env.USERNAME,
   password: process.env.PASSWORD,
   protocol: 'mqtts',
@@ -22,7 +21,9 @@ const API_PORT = 3001;
 
 let db;
 const app = express();
-app.use(cors());
+
+// --- MIDDLEWARE ---
+app.use(cors()); // Allows Frontend to talk to Backend
 app.use(express.json());
 
 async function main() {
@@ -43,107 +44,70 @@ async function main() {
     mqttClient.subscribe('wearable/device-01/data'); 
   });
 
-  // --- THIS IS THE RESTORED MESSAGE HANDLER ---
   mqttClient.on('message', async (topic, message) => {
     try {
       const messageJson = JSON.parse(message.toString());
-      messageJson.receivedAt = new Date();
+      // Ensure we save a standard ISO date string
+      messageJson.receivedAt = new Date().toISOString(); 
       
       const collection = db.collection(SENSOR_COLLECTION);
       const result = await collection.insertOne(messageJson);
-      
-      // The detailed log message has been restored.
-      console.log(`📄 Message inserted into MongoDB with _id: ${result.insertedId}`);
-
+      console.log(`📄 Data stored: ID ${result.insertedId}`);
     } catch (err) {
-      console.error('❌ Error processing message:', err);
+      console.error('❌ Error processing MQTT message:', err);
     }
   });
 
+  // --- API ENDPOINTS ---
 
-  // --- SIGNUP API ENDPOINT ---
   app.post('/api/signup', async (req, res) => {
     try {
       const { fullName, email, password } = req.body;
       const usersCollection = db.collection(USER_COLLECTION);
-
       const existingUser = await usersCollection.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ error: 'User with this email already exists.' });
-      }
+      if (existingUser) return res.status(400).json({ error: 'User exists' });
 
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      const newUser = {
-        fullName,
-        email,
-        password: hashedPassword,
-        createdAt: new Date(),
-      };
-
-      const result = await usersCollection.insertOne(newUser);
-      res.status(201).json({ message: 'User created successfully!', userId: result.insertedId });
-
-    } catch (err) { // <-- The missing '{' is added here
-      console.error("Signup API Error:", err);
-      res.status(500).json({ error: 'Failed to create user.' });
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const result = await usersCollection.insertOne({
+        fullName, email, password: hashedPassword, createdAt: new Date()
+      });
+      res.status(201).json({ message: 'User created', userId: result.insertedId });
+    } catch (err) {
+      res.status(500).json({ error: 'Signup failed' });
     }
   });
 
-
-  // --- LOGIN API ENDPOINT ---
   app.post('/api/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        // Corrected the typo from USER_COLlection to USER_COLLECTION
-        const usersCollection = db.collection(USER_COLLECTION);
-
-        const user = await usersCollection.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ error: 'User not found.' });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid credentials.' });
-        }
-        
-        res.status(200).json({
-            message: 'Login successful!',
-            user: {
-                email: user.email,
-                name: user.fullName,
-                id: user._id
-            }
-        });
-
+      const { email, password } = req.body;
+      const user = await db.collection(USER_COLLECTION).findOne({ email });
+      if (!user || !(await bcrypt.compare(password, user.password))) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+      res.json({ message: 'Login successful', user: { email: user.email, name: user.fullName, id: user._id } });
     } catch (err) {
-        console.error("Login API Error:", err);
-        res.status(500).json({ error: 'Failed to log in.' });
+      res.status(500).json({ error: 'Login error' });
     }
   });
 
-
-  // --- GET LATEST DATA ENDPOINT ---
   app.get('/api/latest-data', async (req, res) => {
     try {
       const collection = db.collection(SENSOR_COLLECTION);
-      const latestData = await collection.findOne({}, { sort: { receivedAt: -1 } });
+      // Sort by _id descending to get the absolute newest entry
+      const latestData = await collection.findOne({}, { sort: { _id: -1 } });
       if (latestData) {
         res.json(latestData);
       } else {
         res.status(404).json({ error: 'No data found' });
       }
     } catch (err) {
-      res.status(500).json({ error: 'Failed to fetch data' });
+      res.status(500).json({ error: 'Fetch error' });
     }
   });
 
   app.listen(API_PORT, () => {
-    console.log(`\n🚀 API server running at http://localhost:${API_PORT}`);
+    console.log(`🚀 Backend running at http://localhost:${API_PORT}`);
   });
 }
 
 main().catch(console.error);
-

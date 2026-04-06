@@ -1,15 +1,29 @@
 import { MongoClient } from "mongodb";
 
 export async function GET() {
-  const client = new MongoClient(process.env.MONGO_URI);
-  await client.connect();
+  // Use the same URI your backend uses
+  const client = new MongoClient(process.env.MONGODB_URI); 
+  
+  try {
+    await client.connect();
 
-  const db = client.db("safex");
-  const collection = db.collection("sensor_data");
+    // MUST match DB_NAME in listen.js
+    const db = client.db("wearableDataDB"); 
+    
+    // MUST match SENSOR_COLLECTION in listen.js
+    const collection = db.collection("sensorReadings");
 
-  const data = await collection.findOne({}, { sort: { receivedAt: -1 } });
+    // Get the latest one
+    const data = await collection.findOne({}, { sort: { _id: -1 } });
 
-  await client.close();
+    if (!data) {
+      return new Response(JSON.stringify({ error: "No data found" }), { status: 404 });
+    }
 
-  return Response.json(data);
+    return Response.json(data);
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  } finally {
+    await client.close();
+  }
 }

@@ -1,6 +1,3 @@
-// File: app/page.js
-// FINAL UPDATE: This version adds animations, a 1-minute offline check, and an improved error display.
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,183 +5,134 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from './context/AuthContext';
 
-// --- ICONS (for new components) ---
+// --- HELPERS FOR LAYMAN DATA ---
+// Converts sensor voltage (0.1V - 2.0V range) into a Safety Level
+const getGasStatus = (volt) => {
+  if (!volt) return { label: '---', percent: 0, status: 'Normal' };
+  // Mapping 0.1V (clean) to 2.0V (dangerous) to a 0-100 scale
+  const percent = Math.min(Math.max(((volt - 0.1) / (2.0 - 0.1)) * 100, 0), 100);
+  
+  if (percent < 15) return { label: 'Normal', percent: Math.round(percent), color: 'text-green-400' };
+  if (percent < 40) return { label: 'Caution', percent: Math.round(percent), color: 'text-amber-400' };
+  return { label: 'Danger', percent: Math.round(percent), color: 'text-red-500' };
+};
+
+// --- ICONS ---
 const AlertTriangleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 
-// UPDATED: Replaced the 'cute' animation with a more aggressive, dangerous-looking one.
 const AnimationStyles = () => (
   <style jsx global>{`
     @keyframes critical-alert-flash {
-      0%, 49% {
-        background-color: rgba(220, 38, 38, 0.5); /* Bright Red background */
-        border-color: rgba(248, 113, 113, 1);     /* Bright red border */
-      }
-      50%, 100% {
-        background-color: rgba(15, 23, 42, 0.3); /* Default background */
-        border-color: rgba(255, 255, 255, 0.1);
-      }
+      0%, 49% { background-color: rgba(220, 38, 38, 0.5); border-color: rgba(248, 113, 113, 1); }
+      50%, 100% { background-color: rgba(15, 23, 42, 0.3); border-color: rgba(255, 255, 255, 0.1); }
     }
-    .animate-critical-alert {
-      animation: critical-alert-flash 0.8s infinite step-end;
-    }
+    .animate-critical-alert { animation: critical-alert-flash 0.8s infinite step-end; }
   `}</style>
 );
-
 
 // --- COMPONENTS ---
 const Navbar = ({ onLogout }) => (
   <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md">
-    <div className="mx-4 p-2.5 bg-black/20 backdrop-blur-lg border border-white/10 rounded-full shadow-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-cyan-400 rounded-full flex items-center justify-center font-bold text-slate-900">W</div>
-          <span className="font-semibold text-white">Wearable Monitor</span>
-        </div>
-        <button onClick={onLogout} className="bg-slate-700/50 hover:bg-slate-600/50 border border-white/10 text-white font-medium py-1.5 px-4 rounded-full text-sm">
-          Logout
-        </button>
+    <div className="mx-4 p-2.5 bg-black/20 backdrop-blur-lg border border-white/10 rounded-full shadow-lg flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <div className="w-8 h-8 bg-cyan-400 rounded-full flex items-center justify-center font-bold text-slate-900">W</div>
+        <span className="font-semibold text-white">Wearable Monitor</span>
       </div>
+      <button onClick={onLogout} className="bg-slate-700/50 hover:bg-slate-600/50 border border-white/10 text-white font-medium py-1.5 px-4 rounded-full text-sm">Logout</button>
     </div>
   </nav>
 );
 
-// UPDATED: StatCard now uses the new 'animate-critical-alert' class
-const StatCard = ({ title, value, unit, icon, color, trend, isOnline, isAlerting }) => (
+const StatCard = ({ title, value, unit, icon, color, trend, isOnline, isAlerting, isGas = false }) => {
+  const gas = isGas ? getGasStatus(value) : null;
+  
+  return (
     <div className={`backdrop-blur-xl border rounded-2xl shadow-lg p-5 transition-all duration-300 ${!isOnline && 'opacity-50'} ${isAlerting ? 'animate-critical-alert' : 'bg-slate-900/30 border-white/10'}`}>
-        <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-                <div className={`text-3xl ${color}`}>{icon}</div>
-                <h3 className="font-medium text-slate-300">{title}</h3>
-            </div>
-            {isOnline && trend !== 'stable' && (
-              <div className={`text-sm font-semibold ${trend === 'up' ? 'text-red-400' : 'text-red-400'}`}>
-                {trend === 'up' ? '▲' : '▼'}
-              </div>
-            )}
-             {isOnline && trend === 'stable' && (
-              <div className="text-sm font-semibold text-slate-400">▬</div>
-            )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className={`text-3xl ${color}`}>{icon}</div>
+          <h3 className="font-medium text-slate-300">{title}</h3>
         </div>
-        <div className="text-right mt-4">
-            {isOnline ? (
-                <p className="text-5xl font-bold text-white transition-colors duration-500">{value ?? '...'}</p>
-            ) : (
-                <p className="text-4xl font-bold text-amber-400 transition-colors duration-500">---</p>
-            )}
-            <p className="text-lg font-normal text-slate-400 -mt-1">{isOnline ? unit : 'No Signal'}</p>
-        </div>
+        {isOnline && trend !== 'stable' && trend && <div className="text-sm font-semibold text-red-400">{trend === 'up' ? '▲' : '▼'}</div>}
+      </div>
+      <div className="text-right mt-4">
+        <p className={`text-4xl font-bold transition-colors duration-500 ${isGas && isOnline ? gas.color : 'text-white'}`}>
+          {isOnline ? (isGas ? gas.label : (value ?? '0')) : '---'}
+        </p>
+        <p className="text-lg font-normal text-slate-400 -mt-1">
+          {isOnline ? (isGas ? `Index: ${gas.percent}%` : unit) : 'No Signal'}
+        </p>
+      </div>
     </div>
-);
-
-const DeviceStatus = ({ deviceId, lastUpdate, isOnline }) => (
-    <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5">
-        <h3 className="font-semibold text-white mb-3">Device Status</h3>
-        <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-400 text-sm">Status</span>
-            <span className={`flex items-center space-x-2 font-semibold text-sm ${isOnline ? 'text-green-400' : 'text-red-500'}`}>
-                <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
-                <span>{isOnline ? 'Online' : 'Offline'}</span>
-            </span>
-        </div>
-        <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-400 text-sm">Device ID</span>
-            <span className="font-mono text-slate-300 text-sm">{deviceId || 'N/A'}</span>
-        </div>
-        <div className="flex items-center justify-between">
-            <span className="text-slate-400 text-sm">Last Update</span>
-            <span className="text-slate-300 text-sm">{lastUpdate}</span>
-        </div>
-    </div>
-);
-
-// UPDATED: AlertPanel logic now matches the new thresholds
-const AlertPanel = ({ data, isOnline }) => {
-    const highCO = isOnline && data?.mq7_volt > 0.6;
-    const lowSpo2 = isOnline && data?.spo2_percent < 95 && data?.spo2_percent > 0;
-    const criticalHeartRate = isOnline && (data?.heart_rate_bpm < 70 || data?.heart_rate_bpm > 130);
-    
-    return (
-        <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5">
-            <h3 className="font-semibold text-white mb-3">System Alerts</h3>
-            <div className="space-y-3">
-                {criticalHeartRate && (
-                     <div className="flex items-start space-x-3 text-sm">
-                        <span className="text-red-400 mt-1 animate-pulse">●</span>
-                        <p className="text-slate-300"><span className="font-semibold text-white">Critical Heart Rate:</span> {data.heart_rate_bpm} bpm</p>
-                    </div>
-                )}
-                {highCO && (
-                    <div className="flex items-start space-x-3 text-sm">
-                        <span className="text-red-400 mt-1 animate-pulse">●</span>
-                        <p className="text-slate-300"><span className="font-semibold text-white">High CO Detected:</span> {data.mq7_volt.toFixed(2)} V</p>
-                    </div>
-                )}
-                {lowSpo2 && (
-                    <div className="flex items-start space-x-3 text-sm">
-                        <span className="text-amber-400 mt-1 animate-pulse">●</span>
-                        <p className="text-slate-300"><span className="font-semibold text-white">Low SpO₂ Warning:</span> {data.spo2_percent}%</p>
-                    </div>
-                )}
-                {!highCO && !lowSpo2 && !criticalHeartRate && isOnline && (
-                    <div className="flex items-start space-x-3 text-sm">
-                        <span className="text-green-400 mt-1">●</span>
-                        <p className="text-slate-300"><span className="font-semibold text-white">System Nominal:</span> All vitals stable.</p>
-                    </div>
-                )}
-                {!isOnline && (
-                     <div className="flex items-start space-x-3 text-sm">
-                        <span className="text-red-500 mt-1">●</span>
-                        <p className="text-slate-300"><span className="font-semibold text-white">Device Offline:</span> No new data.</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+  );
 };
 
-// NEW: A prominent, dismissible error banner
-const ErrorBanner = ({ message, onClose }) => (
-    <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-2xl bg-red-500/30 backdrop-blur-lg border border-red-500/50 text-white p-4 rounded-lg shadow-lg flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-            <AlertTriangleIcon />
-            <span className="font-medium">{message}</span>
-        </div>
-        <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10">
-            <XIcon />
-        </button>
+const DeviceStatus = ({ deviceId, lastUpdate, isOnline }) => (
+  <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5">
+    <h3 className="font-semibold text-white mb-3">Device Status</h3>
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-slate-400 text-sm">Status</span>
+      <span className={`flex items-center space-x-2 font-semibold text-sm ${isOnline ? 'text-green-400' : 'text-red-500'}`}>
+        <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
+        <span>{isOnline ? 'Online' : 'Offline'}</span>
+      </span>
     </div>
+    <div className="flex items-center justify-between"><span className="text-slate-400 text-sm">Last Update</span><span className="text-slate-300 text-sm">{lastUpdate}</span></div>
+  </div>
 );
 
+const AlertPanel = ({ data, isOnline }) => {
+  const co = getGasStatus(data?.mq7);
+  const lpg = getGasStatus(data?.mq6);
+  const highCO = isOnline && co.percent > 40;
+  const highLPG = isOnline && lpg.percent > 40;
+  const lowSpo2 = isOnline && data?.spo2 < 95 && data?.spo2 > 0;
+  const criticalHeartRate = isOnline && data?.hr > 0 && (data?.hr < 60 || data?.hr > 120);
+  
+  return (
+    <div className="bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg p-5">
+      <h3 className="font-semibold text-white mb-3">Safety Briefing</h3>
+      <div className="space-y-3">
+        {criticalHeartRate && <p className="text-red-400 text-sm animate-pulse">● Alert: Abnormal Heart Rate ({data.hr} bpm)</p>}
+        {highCO && <p className="text-red-400 text-sm animate-pulse">● Danger: Carbon Monoxide Leak Detected</p>}
+        {highLPG && <p className="text-orange-400 text-sm animate-pulse">● Hazard: Flammable Gas Detected</p>}
+        {lowSpo2 && <p className="text-amber-400 text-sm animate-pulse">● Warning: Low Oxygen Levels ({data.spo2}%)</p>}
+        {isOnline && !highCO && !highLPG && !lowSpo2 && !criticalHeartRate && <p className="text-green-400 text-sm">● All Systems Nominal</p>}
+        {!isOnline && <p className="text-red-500 text-sm">● Monitoring Interrupted</p>}
+      </div>
+    </div>
+  );
+};
 
 // --- MAIN PAGE ---
 export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
   const router = useRouter();
   const { isAuthenticated, logout, user, loading } = useAuth();
 
   useEffect(() => {
-    if (loading) return;
-    if (!isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, loading, router]);
+    if (!loading && !isAuthenticated) router.replace('/login');
+  }, [isAuthenticated, loading]);
 
   const fetchData = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/latest-data`);
-      if (!response.ok) {
-        throw new Error(`Network response error: ${response.statusText}`);
-      }
+      const response = await fetch('http://localhost:3001/api/latest-data');
+      if (!response.ok) throw new Error('Fetch failed');
       const result = await response.json();
+      
       setData(result);
       setError('');
+
+      if (result.receivedAt) {
+        const timeDiff = new Date() - new Date(result.receivedAt);
+        setIsOnline(timeDiff < 60000);
+      }
     } catch (e) {
-      console.error("Failed to fetch data:", e);
-      setError('Failed to load data. Is the backend server running?');
+      setError('Connection lost to backend.');
+      setIsOnline(false);
     }
   };
 
@@ -196,93 +144,40 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (!data) return; 
+  if (loading || !isAuthenticated) return <div className="min-h-screen bg-slate-900" />;
 
-    const checkOnlineStatus = setInterval(() => {
-      const timeSinceLastData = new Date() - new Date(data.receivedAt);
-      if (timeSinceLastData > 60000) {
-        if (isOnline) setIsOnline(false);
-      } else {
-        if (!isOnline) setIsOnline(true);
-      }
-    }, 5000);
+  const lastUpdate = data ? new Date(data.receivedAt).toLocaleTimeString() : '---';
 
-    return () => clearInterval(checkOnlineStatus);
-  }, [data, isOnline]);
+  return (
+    <>
+      <AnimationStyles />
+      <Navbar onLogout={logout} />
+      <main className="min-h-screen text-white p-4 sm:p-8 bg-slate-900 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
+        <div className="max-w-7xl mx-auto pt-24">
+          <header className="mb-10">
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500">Live Operation Monitor</h1>
+            <p className="text-slate-400">Authorized Personnel: {user?.name || 'Operator'}</p>
+          </header>
 
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <p className="text-white text-lg">Authenticating...</p>
-      </div>
-    );
-  }
-  if (!loading && !isAuthenticated) {
-    return null;
-  }
-  if (isAuthenticated) {
-    const lastUpdate = data ? new Date(data.receivedAt).toLocaleString() : 'Waiting for data...';
-    
-    // --- KEY CHANGE: Updated alert conditions to match user feedback ---
-    const isCriticalHeartRate = data?.heart_rate_bpm < 70 || data?.heart_rate_bpm > 130;
-    const heartRateTrend = data?.heart_rate_bpm > 130 ? 'up' : data?.heart_rate_bpm < 70 ? 'down' : 'stable';
-
-    const isLowSpo2 = data?.spo2_percent < 95 && data?.spo2_percent > 0;
-    const isHighCO = data?.mq7_volt > 0.6;
-    
-    return (
-      <>
-        <AnimationStyles />
-        <Navbar onLogout={logout} />
-        {error && <ErrorBanner message={error} onClose={() => setError('')} />}
-        
-        <main className="min-h-screen text-white p-4 sm:p-8 bg-slate-900 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
-          <div className="max-w-7xl mx-auto pt-24">
-            <header className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-              <div>
-                <h1 className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500">
-                  Live Operation Monitor
-                </h1>
-                <p className="text-slate-400 mt-2 text-lg">
-                  Welcome, {user?.name || user?.email}!
-                </p>
-              </div>
-              <div className="mt-4 sm:mt-0">
-                <Link href="/profile" className="bg-slate-700/50 hover:bg-slate-600/50 border border-white/10 text-white font-medium py-2 px-4 rounded-full text-sm">
-                  View Profile
-                </Link>
-              </div>
-            </header>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              <StatCard title="Heart Rate" value={data?.hr} unit="bpm" icon="❤️" color="text-red-400" isOnline={isOnline} isAlerting={isOnline && (data?.hr > 120 || (data?.hr < 60 && data?.hr > 0))}/>
+              <StatCard title="SpO₂" value={data?.spo2} unit="%" icon="💨" color="text-sky-400" isOnline={isOnline} isAlerting={isOnline && data?.spo2 < 95 && data?.spo2 > 0}/>
+              <StatCard title="Temperature" value={data?.temperature} unit="°C" icon="🌡️" color="text-orange-400" isOnline={isOnline}/>
+              <StatCard title="Humidity" value={data?.humidity} unit="%" icon="💧" color="text-blue-400" isOnline={isOnline}/>
+              
+              {/* LAYMAN GAS SENSORS */}
+              <StatCard title="CO Safety" value={data?.mq7} icon="🔥" color="text-amber-400" isOnline={isOnline} isGas={true} isAlerting={isOnline && getGasStatus(data?.mq7).percent > 40}/>
+              <StatCard title="Gas Leakage" value={data?.mq6} icon="🏭" color="text-slate-400" isOnline={isOnline} isGas={true} isAlerting={isOnline && getGasStatus(data?.mq6).percent > 40}/>
+            </div>
             
-            {!isOnline && (
-              <div className="text-center text-amber-300 bg-amber-900/50 p-3 rounded-lg mb-6 border border-amber-500/50 animate-pulse">
-                Warning: Device is not relaying data properly. Last seen over a minute ago.
-              </div>
-            )}
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                <StatCard title="Heart Rate" value={data?.heart_rate_bpm} unit="bpm" icon="❤️" color="text-red-400" trend={heartRateTrend} isOnline={isOnline} isAlerting={isOnline && isCriticalHeartRate}/>
-                <StatCard title="SpO₂" value={data?.spo2_percent} unit="%" icon="💨" color="text-sky-400" trend={isLowSpo2 ? 'down' : 'stable'} isOnline={isOnline} isAlerting={isOnline && isLowSpo2}/>
-                <StatCard title="Temperature" value={data?.temperature_C} unit="°C" icon="🌡️" color="text-orange-400" trend="stable" isOnline={isOnline} isAlerting={false}/>
-                <StatCard title="Humidity" value={data?.humidity_percent} unit="%" icon="💧" color="text-blue-400" trend="stable" isOnline={isOnline} isAlerting={false}/>
-                <StatCard title="CO Sensor" value={data?.mq7_volt?.toFixed(3)} unit="V" icon="🔥" color="text-amber-400" trend={isHighCO ? 'up' : 'stable'} isOnline={isOnline} isAlerting={isOnline && isHighCO}/>
-                <StatCard title="LPG Sensor" value={data?.mq6_volt?.toFixed(3)} unit="V" icon="🏭" color="text-slate-400" trend="stable" isOnline={isOnline} isAlerting={false}/>
-              </div>
-
-              <div className="space-y-6">
-                <DeviceStatus deviceId={data?.device_id} lastUpdate={lastUpdate} isOnline={isOnline}/>
-                <AlertPanel data={data} isOnline={isOnline} />
-              </div>
+            <div className="space-y-6">
+              <DeviceStatus lastUpdate={lastUpdate} isOnline={isOnline}/>
+              <AlertPanel data={data} isOnline={isOnline} />
             </div>
           </div>
-        </main>
-      </>
-    );
-  }
-
-  return null;
+        </div>
+      </main>
+    </>
+  );
 }
-
